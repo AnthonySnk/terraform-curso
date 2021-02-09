@@ -1,0 +1,17 @@
+demo-terraform1/aws-instances/.terraform
+demo-terraform1/aws-instances/.terraform.lock.hcl
+
+demo-terraform1/aws-parametrizado/.terraform
+demo-terraform1/aws-parametrizado/.terraform.lock.hcl
+
+demo-terraform1/aws-backend/.terraform
+demo-terraform1/aws-backend/.terraform.lock.hcl
+
+demo-terraform1/aws-modulos/.terraform
+demo-terraform1/aws-modulos/.terraform.lock.hcl
+
+curso2/primer-contacto/.terraform
+curso2/primer-contacto/.terraform.lock.hcl
+
+curso2/segundo-contacto/.terraform
+curso2/segundo-contacto/.terraform.lock.hcl
