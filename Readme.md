@@ -26,6 +26,9 @@
 - [Atachar recursos aun no existentes](#atachar-recursos-aun-no-existentes)
 - [Key Pair](#key-pair)
 - [User data](#user-data)
+- [Data Source - AMI](#data-source---ami)
+- [Data source VPC](#data-source-vpc)
+- [AWS_lauch_configuration](#aws_lauch_configuration)
 # Documentacion de AWS provider Terraform
   ```
   https://registry.terraform.io/providers/hashicorp/aws/latest/docs
@@ -310,4 +313,57 @@ file("user-data.txt")
 Ejemplo
 ```
 user_data = file("user-data.txt")
+```
+
+# Data Source - AMI
+Nos permiten acceder a data de AWS  existentes.
+https://www.terraform.io/docs/language/data-sources/index.html
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance
+
+```
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
+}
+
+```
+
+El filter.values lo podes sacar simulando crear una ec2 desde la consola, luego recogemos el id, nos ridigimos al menu de ami, lo pegamos buscamos este valor en las amis publicas y copiamos el nombre excetuando los ultimos numero de esta ya que son la version de la ami.
+
+# Data source VPC
+
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc
+```
+data "aws_vpc" "selected" {
+  id = var.vpc_id
+}
+```
+# AWS_lauch_configuration
+Nos permitira que un Scaling Group cree una serie de instancias de forma automatica y esto le indicara como seran configuradas esas maquinas.
+
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_configuration
+
+```
+resource "aws_launch_configuration" "as_conf" {
+  name_prefix   = "web_config-${var.project_name}"
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+  security_group = [
+    aws_security_group.allow_shh_anywhere.id,
+    aws_security_group.allow_http_anywhere.id
+  ]
+  user_data = file("user-data.txt")
+}
 ```
