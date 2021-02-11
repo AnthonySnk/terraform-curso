@@ -13,6 +13,10 @@
 - [Outputs](#outputs)
 - [Archivos de estados de Terraform](#archivos-de-estados-de-terraform)
 - [Archivos de Backends](#archivos-de-backends)
+  - [Estados remotos con s3](#estados-remotos-con-s3)
+  - [Estados lock](#estados-lock)
+    - [El bloqueo se hace con DynamoDB](#el-bloqueo-se-hace-con-dynamodb)
+    - [Desbloqueo de LOCKID](#desbloqueo-de-lockid)
 - [Modulos](#modulos)
 - [Módulos remotos](#módulos-remotos)
   - [Pasos](#pasos)
@@ -29,6 +33,19 @@
 - [Data Source - AMI](#data-source---ami)
 - [Data source VPC](#data-source-vpc)
 - [AWS_lauch_configuration](#aws_lauch_configuration)
+- [Obtener el ID de una EC2](#obtener-el-id-de-una-ec2)
+- [lifeCycle](#lifecycle)
+- [Balanceador de carga](#balanceador-de-carga)
+- [aws_autoscaling_group - Balanceador de carga](#aws_autoscaling_group---balanceador-de-carga)
+  - [health_check_type](#health_check_type)
+  - [health_check_grace_period](#health_check_grace_period)
+- [VPC](#vpc)
+  - [aws_subnet_ids](#aws_subnet_ids)
+- [Terraform Console](#terraform-console)
+- [Interpolation Syntax](#interpolation-syntax)
+  - [built-in-functions](#built-in-functions)
+  - [string multilineas](#string-multilineas)
+- [Templates en Terraform](#templates-en-terraform)
 # Documentacion de AWS provider Terraform
   ```
   https://registry.terraform.io/providers/hashicorp/aws/latest/docs
@@ -123,7 +140,6 @@ auto.tfvars
     delete = "2h"
   }
   ```
-
 # Destruir una Infraestructura
 Cuando se desea eliminar los recursos que hemos creado
 ```
@@ -159,6 +175,50 @@ Entre sus muchas ventajas que trae el trabajar con backends son:
 - Facilita la integración continua.
 - Mayor disponibilidad.
 
+## Estados remotos con s3
+Para poder trabajar en equipo con los estadados de la infraestructura en s3
+
+https://www.terraform.io/docs/language/settings/backends/s3.html
+
+```
+terraform {
+  backend "s3" {
+    bucket = "terrafrom-states-snk"
+    key    = "terraform/web_interface.tfstate"
+    region = "us-east-1"
+  }
+}
+```
+
+## Estados lock 
+En caso de que se este trabajando en equipo y guardando el estado de forma remota esto podria solucionar problemas, haciendo un bloqueo mientras un usuario esta escribiendo o realizando algunas modificaciones, y nadie mas podra trabajar hasta que este usuario libere ese lock
+
+https://www.terraform.io/docs/language/state/locking.html
+
+### El bloqueo se hace con DynamoDB
+
+https://www.terraform.io/docs/language/settings/backends/s3.html#dynamodb-state-locking
+
+https://medium.com/@jessgreb01/how-to-terraform-locking-state-in-s3-2dc9a5665cb6
+
+- creamos una tabla
+- Debemos tener acceso a la tabla con un user
+  
+ ``` 
+ terraform {
+  backend "s3" {
+    bucket = "terrafrom-states-snk"
+    key    = "terraform/web_interface.tfstate"
+    region = "us-east-1"
+    dynamodb_table = "TerraformLock"
+  }
+}
+```
+### Desbloqueo de LOCKID
+En caso de que nuestro apply no haya terminado por X motivo podemos forzar un desbloqueo con el Id
+https://www.terraform.io/docs/cli/commands/force-unlock.html
+
+En consola digitar ```terraform force-unlock LOCK_ID```
 # Modulos
 Así como en lenguajes de programación contamos con librerías, en Terraform podemos separar nuestro código y reutilizarlo a través de módulos. Dentro de nuestro módulo vamos a añadir el archivo de configuración y el de definición de variables.
 
@@ -366,4 +426,145 @@ resource "aws_launch_configuration" "as_conf" {
   ]
   user_data = file("user-data.txt")
 }
+```
+# Obtener el ID de una EC2
+
+```instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)```
+
+# lifeCycle
+Nos permitira que cuando se modifique el recurso podamos asignar un comportamiento.
+Sirve para en caso de alguna entindad necesite de otra y no podamos modificar el otro recurso sin crear otro.
+https://www.terraform.io/docs/language/meta-arguments/lifecycle.html
+
+
+# Balanceador de carga
+
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elb
+
+```
+# Create a new load balancer
+resource "aws_elb" "web" {
+  name = "${var.project_name}-elb-web"
+  #   availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  subnets = ["subnet-07e64336", "subnet-0260f35d"]
+  listener {
+    instance_port     = 80 # escuchaando
+    instance_protocol = "http"
+    lb_port           = 80 # redireccionar
+    lb_protocol       = "http"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    timeout             = 2
+    target              = "HTTP:80/"
+    interval            = 30
+  }
+  security_groups = [
+    aws_security_group.allow_http_anywhere.id
+  ]
+  tags = {
+    Name = "${var.project_name}-terraform-elb"
+  }
+}
+```
+
+# aws_autoscaling_group - Balanceador de carga
+
+Podemos atachar el balanceador de carga al autoscaling
+```
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group
+```
+
+```
+load_balancers = [ aws_elb.web.name ]
+load_balancers = [ aws_elb.<nombreAsignado>.name ]
+```
+
+##  health_check_type 
+Sirve para poder checkerar el ELB o EC2
+```health_check_type    = "ELB"```
+## health_check_grace_period
+Nos sirve para poder asiganar un tiempo desde que se inicia la maquina para comenzar a dar checkeos.
+
+```health_check_grace_period = 10 # despues de encendida 10s comenzara el checkeo```
+ 
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group#health_check_grace_period
+
+# VPC
+
+```https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc```
+
+## aws_subnet_ids
+
+```https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet_ids```
+```
+data "aws_vpc" "selected" {
+  default = true
+}
+data "aws_subnet_ids" "selected" {
+  vpc_id = data.aws_vpc.selected.id
+}
+
+```
+
+# Terraform Console
+
+Terraform nos provee una consola para poder hacer uso de ella y experimentar o debugear con las variables
+```terraform console```
+
+Obeter datos de los data sources sin necesidad de correr 
+
+```var.project_name```
+```data.aws_subnet_ids.selected.id```
+
+# Interpolation Syntax
+https://www.terraform.io/docs/configuration-0-11/interpolation.html
+  ## built-in-functions
+  Permiten transformar varibales
+   https://www.terraform.io/docs/configuration-0-11/interpolation.html#built-in-functions
+
+  - codifiar variables
+  ```base64encode("hola")```  
+ 
+## string multilineas
+  ```
+  <<EOT
+  hello
+  world
+  EOT
+```
+
+# Templates en Terraform 
+Terraform tiene sus plugin para poder iniciar lso template asique se debe ejecutar el ```terraform init```.
+
+Ejemplo
+
+template.tf
+```
+data "template_file" "user_data" {
+  template = file("template.txt")
+  vars = {
+      test_var = "Test-values"
+      project_name = var.project_name
+    }
+}
+```
+
+output.tf
+```
+output "template_rendered" {
+  value = data.template_file.user_data.rendered
+}
+```
+
+template.txt
+```
+Estas son las variables para el proyecto: ${project_name}
+var 1: valor1
+var 2: valor2
+var 3: valor3
+test varible value = ${test_var}
+Nombre del proyecto = ${project_name}
 ```
