@@ -1,0 +1,6 @@
+Estas son las variables para el proyecto: ${project_name}
+var 1: valor1
+var 2: valor2
+var 3: valor3
+test varible value = ${test_var}
+Nombre del proyecto = ${project_name}
