@@ -4,6 +4,20 @@
   - [Verificar la instalación](#verificar-la-instalación)
   - [Configurar la cuenta de aws](#configurar-la-cuenta-de-aws)
   - [Comandos de terraform](#comandos-de-terraform)
+    - [fmt](#fmt)
+    - [validate](#validate)
+    - [init](#init)
+    - [plan](#plan)
+    - [apply](#apply)
+    - [destroy](#destroy)
+    - [graph](#graph)
+    - [import](#import)
+    - [refresh](#refresh)
+    - [show](#show)
+    - [comandos para el state](#comandos-para-el-state)
+    - [taint y untaint](#taint-y-untaint)
+    - [workspace](#workspace)
+    - [Interpolation Syntax con WorkSpaces](#interpolation-syntax-con-workspaces)
 - [Enviar parametros](#enviar-parametros)
 - [Destruccion sin preguntar nada](#destruccion-sin-preguntar-nada)
 - [Creacion sin preguntar nada](#creacion-sin-preguntar-nada)
@@ -46,6 +60,8 @@
   - [built-in-functions](#built-in-functions)
   - [string multilineas](#string-multilineas)
 - [Templates en Terraform](#templates-en-terraform)
+- [Terraform OUTPUT](#terraform-output)
+  - [Acceder a outputs de otro proyecto](#acceder-a-outputs-de-otro-proyecto)
 # Documentacion de AWS provider Terraform
   ```
   https://registry.terraform.io/providers/hashicorp/aws/latest/docs
@@ -78,35 +94,83 @@ $ export AWS_SECRET_ACCESS_KEY=""
 ## Comandos de terraform
 Para poder ejecutar los comandos de terraform es necesario estar dentro de la carpeta donde se encuentran los archivos de definicion.
 Este comando es util para dar un formato uniforme a todos los archivos de terraform.
-
-```sh
+### fmt
+```
 $ terraform fmt
 ```
-
+### validate
 Este comando es util para validar la sintaxis de los archivos de definición de terraform.
 
-```sh
+```
 $ terraform validate
 ```
+### init
 
 Este comando es necesario para descargar los plugins necesarios para el provider.
-```sh
+```
 $ terraform init
 ```
-
+### plan
 Con este comando es posible ver los recursos que se crearan con la definición.
-```sh
+```
 $ terraform plan
 ```
-
+### apply
 Finalmente cuando estamos seguros de lo que vamos a crear procedemos a aplicar. Esto creara la infraestructura que definimos que en este caso es una instance en AWS.
-```sh
-$ terraform apply
 ```
-
+terraform apply
+```
+### destroy
 Terraform tambien nos permite destruir la infraestructura creada.
-```sh
+```
 $ terraform destroy
+```
+### graph
+Terraform graph nos ayuda creando de una forma visual la infraestrutura
+Ejmplo que lo devovlera en JSON para poder visualizar en otra plataform
+```
+terraform graph
+```
+Nos dibuja el grafico
+```terraform graph | dot -Tsvg > graph.svg```
+
+NOTA debemos instalar ```GraphViz```
+### import
+Recursos que han sido creado a mano, pueden ser importados por terraform, no muy factibles cuanod se tiene una infraestructura muy grande
+https://www.terraform.io/docs/cli/commands/import.html
+
+```terraform import aws_eip.eip <id_de_eip>```
+
+### refresh
+actualiza los estados locales contra los recursos reales
+https://www.terraform.io/docs/cli/commands/refresh.html
+### show
+Nos permite inspeccionar los datos de los recursos
+### comandos para el state
+  - state list
+  - state mv
+  - state pull
+  - state push
+  - state replace-provider
+  - state rm (Remover uno o mas items del estado)
+  ```terraform state rm 'module.foo'```
+  - state show
+### taint y untaint
+Marca un recursos con taint significa que ese recurso es invalido o tiene un marca-manchado y sera volvera a crearlo.
+El terraform taintcomando marca manualmente un recurso administrado por Terraform como contaminado, lo que obliga a ser destruido y recreado en la siguiente aplicación.
+
+El comando terraform untaint desmarca manualmente un recurso administrado por Terraform como contaminado, restaurándolo como la instancia principal en el estado. Esto revierte una alteración de terraformación manual o el resultado de que los aprovisionadores fallan en un recurso.
+
+```terraform untaint [options] name```
+
+### workspace
+Para crear espacios de trabajo diferentes
+
+### Interpolation Syntax con WorkSpaces
+```
+resource "aws_instance" "web" {
+  subnet = "${var.env == "production" ? var.prod_subnet : var.dev_subnet}"
+}
 ```
 # Enviar parametros
 Para enviar el archivo donde se contienen las variables enviamos como parametro el archivo
@@ -251,6 +315,9 @@ output "module-intance-ip" {
   value = module.app-with-modules.instance_ip
 }
 ```
+
+
+creamos unos input en el modulo los cuales son las varibales que se usaran y cuando llamemos al modulo pasamos esas varibles en ese archivo.
 # Módulos remotos
 
 Los módulos locales son útiles, pero tienen la limitante de que solamente se encuentran en tu máquina. Para mejorar el trabajo remoto y reutilización de módulos podemos usar el control de versiones de preferencia, ya sea GitHub o BitBucket.
@@ -334,6 +401,7 @@ Ejemplo
 terraform plan --target aws_security_group.allow_shh_anywhere
 terraform plan --target <recurso>.<nombreRecurso>
 ```
+tambien podesmos utilizar los --target para eliminar recursos especificos
 # Atachar recursos aun no existentes
 Deseamos atachar un recurso que aun no sabemos el Id
 Atachando algo que se esta creando con terraform
@@ -567,4 +635,28 @@ var 2: valor2
 var 3: valor3
 test varible value = ${test_var}
 Nombre del proyecto = ${project_name}
+```
+# Terraform OUTPUT
+
+Terraform tiene un comamndo para poder ver nuestros output
+  ```terraform output``
+  ```terraform output <nombreOutput>```
+## Acceder a outputs de otro proyecto
+Para acceder a output de otros poyectos
+https://www.terraform.io/docs/language/state/remote-state-data.html
+
+```
+data "terraform_remote_state" "project1" {
+  backend = "s3"
+  config = {
+    bucket = "terrafrom-states-snk"
+    key    = "terraform/project1.tfstate"
+    region = "us-east-1"
+  }
+}
+```
+podemos abrir la consola de terraform y escribir lo sigueinte para poder conocer la ip estatica que nuestro output del projecto 1 tiene
+
+```
+data.terraform_remote_state.project1.outputs.web_public_EIP
 ```
