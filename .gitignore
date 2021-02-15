@@ -15,3 +15,5 @@ curso2/primer-contacto/.terraform.lock.hcl
 
 curso2/segundo-contacto/.terraform
 curso2/segundo-contacto/.terraform.lock.hcl
+
+*.pdf
