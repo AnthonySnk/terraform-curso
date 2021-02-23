@@ -8,6 +8,10 @@ resource "aws_instance" "VPN" {
     aws_security_group.allow_SSH.id,
     aws_security_group.allow_VPN.id
   ]
+  root_block_device = {
+  volume_size = 40
+  # volume_type = var.volumeType
+  }
   tags = {
     Name = "VPN - ${var.project_name}"
   }
