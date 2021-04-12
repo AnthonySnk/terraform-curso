@@ -1,3 +1,4 @@
+
 - [Documentacion de AWS provider Terraform](#documentacion-de-aws-provider-terraform)
 - [AWS instance with terraform](#aws-instance-with-terraform)
   - [Instalación de terraform](#instalación-de-terraform)
@@ -62,14 +63,20 @@
 - [Templates en Terraform](#templates-en-terraform)
 - [Terraform OUTPUT](#terraform-output)
   - [Acceder a outputs de otro proyecto](#acceder-a-outputs-de-otro-proyecto)
+- [Crear un recurso especifico](#crear-un-recurso-especifico)
+
 # Documentacion de AWS provider Terraform
-  ```
-  https://registry.terraform.io/providers/hashicorp/aws/latest/docs
-  ```
+
+  <https://registry.terraform.io/providers/hashicorp/aws/latest/docs>
+
 # AWS instance with terraform
+
 ## Instalación de terraform
+
 Terraform tiene un binario para cada sistema operativo, en el siguiente link estan las instrucciones para descargalo e instalarlo en cada uno, en este documento se muestran las instrucciones para instalar en Mac o linux.
-- https://learn.hashicorp.com/terraform/getting-started/install.html
+
+- <https://learn.hashicorp.com/terraform/getting-started/install.html>
+
 ```sh
 $ curl -o /tmp/packer.zip https://releases.hashicorp.com/terraform/0.12.6/terraform_0.12.6_darwin_amd64.zip
 
@@ -78,84 +85,116 @@ $ unzip /tmp/packer.zip -d /usr/local/bin
 ## En el siguiente link se encuentra la url de los binarios para los demas sistemas operativos https://www.terraform.io/downloads.html
 ```
 
-## Verificar la instalación 
+## Verificar la instalación
+
 ```sh
 $ terraform version
 Terraform v0.12.6
 ```
 
 ## Configurar la cuenta de aws
+
 Configurar las credenciales de AWS. Esto no es indispensable pero si se omite será necesario setear las variables dentro de los archivos de configuración de terraform.
+
 ```sh
-$ export AWS_ACCESS_KEY_ID=""
-$ export AWS_SECRET_ACCESS_KEY=""
+export AWS_ACCESS_KEY_ID=""
+export AWS_SECRET_ACCESS_KEY=""
 ```
 
 ## Comandos de terraform
+
 Para poder ejecutar los comandos de terraform es necesario estar dentro de la carpeta donde se encuentran los archivos de definicion.
 Este comando es util para dar un formato uniforme a todos los archivos de terraform.
+
 ### fmt
+
+```bash
+ terraform fmt
 ```
-$ terraform fmt
-```
+
 ### validate
+
 Este comando es util para validar la sintaxis de los archivos de definición de terraform.
 
+```bash
+terraform validate
 ```
-$ terraform validate
-```
+
 ### init
 
 Este comando es necesario para descargar los plugins necesarios para el provider.
+
+```bash
+terraform init
 ```
-$ terraform init
-```
+
 ### plan
+
 Con este comando es posible ver los recursos que se crearan con la definición.
+
+```bash
+terraform plan
 ```
-$ terraform plan
-```
+
 ### apply
+
 Finalmente cuando estamos seguros de lo que vamos a crear procedemos a aplicar. Esto creara la infraestructura que definimos que en este caso es una instance en AWS.
-```
+
+```bash
 terraform apply
 ```
+
 ### destroy
+
 Terraform tambien nos permite destruir la infraestructura creada.
+
+```bash
+terraform destroy
 ```
-$ terraform destroy
-```
+
 ### graph
+
 Terraform graph nos ayuda creando de una forma visual la infraestrutura
 Ejmplo que lo devovlera en JSON para poder visualizar en otra plataform
-```
+
+```bash
 terraform graph
 ```
+
 Nos dibuja el grafico
 ```terraform graph | dot -Tsvg > graph.svg```
 
 NOTA debemos instalar ```GraphViz```
+
 ### import
+
 Recursos que han sido creado a mano, pueden ser importados por terraform, no muy factibles cuanod se tiene una infraestructura muy grande
-https://www.terraform.io/docs/cli/commands/import.html
+<https://www.terraform.io/docs/cli/commands/import.html>
 
 ```terraform import aws_eip.eip <id_de_eip>```
 
 ### refresh
+
 actualiza los estados locales contra los recursos reales
-https://www.terraform.io/docs/cli/commands/refresh.html
+<https://www.terraform.io/docs/cli/commands/refresh.html>
+
 ### show
+
 Nos permite inspeccionar los datos de los recursos
+
 ### comandos para el state
-  - state list
-  - state mv
-  - state pull
-  - state push
-  - state replace-provider
-  - state rm (Remover uno o mas items del estado)
+
+- state list
+- state mv
+- state pull
+- state push
+- state replace-provider
+- state rm (Remover uno o mas items del estado)
   ```terraform state rm 'module.foo'```
-  - state show
+- state show
+
 ### taint y untaint
+
 Marca un recursos con taint significa que ese recurso es invalido o tiene un marca-manchado y sera volvera a crearlo.
 El terraform taintcomando marca manualmente un recurso administrado por Terraform como contaminado, lo que obliga a ser destruido y recreado en la siguiente aplicación.
 
@@ -164,37 +203,52 @@ El comando terraform untaint desmarca manualmente un recurso administrado por Te
 ```terraform untaint [options] name```
 
 ### workspace
+
 Para crear espacios de trabajo diferentes
 
 ### Interpolation Syntax con WorkSpaces
-```
+
+```tf
 resource "aws_instance" "web" {
   subnet = "${var.env == "production" ? var.prod_subnet : var.dev_subnet}"
 }
 ```
+
 # Enviar parametros
+
 Para enviar el archivo donde se contienen las variables enviamos como parametro el archivo
-```
+
+```bash
 terraform plan -var-file - dev.tfvars
 ```
+
 Si deseamos que terraform no preguntate nada agregamos el parametro
-```
+
+```bash
 --auto-approve
 ```
-# Destruccion sin preguntar nada
-```terraform destroy --force```
-# Creacion sin preguntar nada
-```terraform apply --auto-aprove```
-# Variables
-Cuando no queremos enviar por parametros el archivo donde se encuentran las variables tenemos que agregar la extencion, RECOMENDABLE CUANDO ESTAS VARIABLES NO CAMBIAN 
 
-```
+# Destruccion sin preguntar nada
+
+```terraform destroy --force```
+
+# Creacion sin preguntar nada
+
+```terraform apply --auto-aprove```
+
+# Variables
+
+Cuando no queremos enviar por parametros el archivo donde se encuentran las variables tenemos que agregar la extencion, RECOMENDABLE CUANDO ESTAS VARIABLES NO CAMBIAN
+
+```tf
 auto.tfvars
 ```
+
 ```prod.auto.tfvars```
 
 # Evitar destruccion
-``` 
+
+```tf
 # ...
   lifecycle {
     prevent_destroy = true # no destruir cuando se aplique terraform destroy
@@ -204,25 +258,33 @@ auto.tfvars
     delete = "2h"
   }
   ```
+
 # Destruir una Infraestructura
+
 Cuando se desea eliminar los recursos que hemos creado
-```
+
+```bahs
 terraform destroy
 ```
+
 Este tambien podemos enviarles los parametros:
-```
+
+```bash
 terraform destroy -var-file - dev.tfvars --auto-approve
 ```
 
 # Outputs
-Para conocer los elementos creados 
 
-```
+Para conocer los elementos creados
+
+```bash
 output "instance_ip" {
     value = <instance_type>.<instance_name>.<property>
 }
 ```
+
 # Archivos de estados de Terraform
+
 El directorio .terraform es creado cuando ejecutamos por primera vez ```terraform init```.
 
 El archivo ```terraform.tfstate``` es creado cuando ejecutamos por primera vez terraform apply y guarda el estado,
@@ -232,19 +294,22 @@ El archivo ```terraform.tfstate.backup``` es creado cuando tenemos un primer est
 Ahora cada vez que apliques los cambios de la configuracion estos pasaran a estar en el estado ```terraform.tfstate``` y el anterior estado estara en ```terraform.tfstate.backup```
 
 # Archivos de Backends
+
 Terraform permite almacenar el estado de manera remota a través de Backends. Podemos almacenarlo en diferentes servicios de storage en la nube como S3 o Azure.
 
 Entre sus muchas ventajas que trae el trabajar con backends son:
+
 - Es más fácil trabajar en equipo.
 - Facilita la integración continua.
 - Mayor disponibilidad.
 
 ## Estados remotos con s3
+
 Para poder trabajar en equipo con los estadados de la infraestructura en s3
 
-https://www.terraform.io/docs/language/settings/backends/s3.html
+<https://www.terraform.io/docs/language/settings/backends/s3.html>
 
-```
+```tf
 terraform {
   backend "s3" {
     bucket = "terrafrom-states-snk"
@@ -254,21 +319,22 @@ terraform {
 }
 ```
 
-## Estados lock 
+## Estados lock
+
 En caso de que se este trabajando en equipo y guardando el estado de forma remota esto podria solucionar problemas, haciendo un bloqueo mientras un usuario esta escribiendo o realizando algunas modificaciones, y nadie mas podra trabajar hasta que este usuario libere ese lock
 
-https://www.terraform.io/docs/language/state/locking.html
+<https://www.terraform.io/docs/language/state/locking.html>
 
 ### El bloqueo se hace con DynamoDB
 
-https://www.terraform.io/docs/language/settings/backends/s3.html#dynamodb-state-locking
+<https://www.terraform.io/docs/language/settings/backends/s3.html#dynamodb-state-locking>
 
-https://medium.com/@jessgreb01/how-to-terraform-locking-state-in-s3-2dc9a5665cb6
+<https://medium.com/@jessgreb01/how-to-terraform-locking-state-in-s3-2dc9a5665cb6>
 
 - creamos una tabla
 - Debemos tener acceso a la tabla con un user
   
- ``` 
+ ```tf
  terraform {
   backend "s3" {
     bucket = "terrafrom-states-snk"
@@ -278,18 +344,23 @@ https://medium.com/@jessgreb01/how-to-terraform-locking-state-in-s3-2dc9a5665cb6
   }
 }
 ```
+
 ### Desbloqueo de LOCKID
+
 En caso de que nuestro apply no haya terminado por X motivo podemos forzar un desbloqueo con el Id
-https://www.terraform.io/docs/cli/commands/force-unlock.html
+<https://www.terraform.io/docs/cli/commands/force-unlock.html>
 
 En consola digitar ```terraform force-unlock LOCK_ID```
+
 # Modulos
+
 Así como en lenguajes de programación contamos con librerías, en Terraform podemos separar nuestro código y reutilizarlo a través de módulos. Dentro de nuestro módulo vamos a añadir el archivo de configuración y el de definición de variables.
 
 Los modulos son usados de una manera como librerias.
 para crear un modulo se necesita crear un carpeta con un nombre cualquiera
 luego crear otro main en la raiz instanciando ese mismo modulo de la siguiente manera
-```
+
+```tf
 provider "aws" {
   shared_credentials_file = "/Users/tfsvr/.aws/credentials"
   region                  = "us-east-1"
@@ -306,32 +377,37 @@ module "app-with-modules" {
 }
 
 ```
+
 En la carpeta de modulos debe contener su propio ```main.tf``` ademas de su archivo de variable y output propio.
 
 Para hacer el output del modulo se debe crear en la raiz de todas las carpeta en el mismo nivel donde el main que invoca al modulo se encuentra
 
-```
+```tf
 output "module-intance-ip" {
   value = module.app-with-modules.instance_ip
 }
 ```
 
-
 creamos unos input en el modulo los cuales son las varibales que se usaran y cuando llamemos al modulo pasamos esas varibles en ese archivo.
+
 # Módulos remotos
 
 Los módulos locales son útiles, pero tienen la limitante de que solamente se encuentran en tu máquina. Para mejorar el trabajo remoto y reutilización de módulos podemos usar el control de versiones de preferencia, ya sea GitHub o BitBucket.
+
 ## Pasos
-  - Crear un repositorio en github
-  - versionamos solo la carpeta de modulos
-  - iniciamos el git
-  - agregamos el repositorio
-  - realizamos el commit
-  - hacemos el push
+
+- Crear un repositorio en github
+- versionamos solo la carpeta de modulos
+- iniciamos el git
+- agregamos el repositorio
+- realizamos el commit
+- hacemos el push
   
 ## Implementacion
+
   En el archivo donde se hace referencia al modulo es ves de hacer refencia a un modulo local, se hara referencia al github
-  ```
+
+  ```tf
     module "app-with-modules" {
     source        = "github.com/...."
     ami_id        = var.ami_id
@@ -341,15 +417,19 @@ Los módulos locales son útiles, pero tienen la limitante de que solamente se e
     ingress_rules = var.ingress_rules
   }
   ```
+
 # Credenciales
+
 Debemos crear una carpeta con .AWS donde se va crear un archivo con el nombre de ```credentials```, el contenido debe ser
 
-```
+```bash
 [default]
 aws_access_key_id= [Access key ID]
 aws_secret_access_key= [Secret access key]
 ```
+
 # Otra Opcion
+
 Otra Opción es que instalen el CLI de AWS y con
 ```aws configure```
 
@@ -367,24 +447,30 @@ pero si solo usamos aws configure, es lo mismo que
 # Varibles de entorno
 
 Para crear las variables de entorno en Windows con Powershell se ejecuta:
-```
+
+```bash
 $env:AWS_ACCESS_KEY_ID="clave"
 $env:AWS_SECRET_ACCESS_KEY="clave"
 ```
+
 Para revisar las varibles de entorno disponibles en el sistema windows usando Powershell, se ejecuta:
 
-```
+```bash
 Get-ChildItem Env:
 ```
+
 # Construccion de packer
 
 Para crear los creado con packer
 ```packer build file.js```
+
 # Backend
+
 Nos sirve para almacenar los estados en un bucket
 backend.tf
 El ```force_destroy= true``` nos sirve para el bucket se elimine cuando se ejecute el detroy
-```
+
+```tf
 backend "s3"{
     bucket = "bucket-NAME"
     key = "Nombre-del-file-en-s3"
@@ -392,24 +478,33 @@ backend "s3"{
     force_destroy= true
 }
 ```
+
 Se debe correr el ```terraform init```
+
 # Terraform para planear un recurso especifico
+
 Deseamos saber el plan de un recurso usaremos un parametro ```target```
 
 Ejemplo
-```
+
+```bash
 terraform plan --target aws_security_group.allow_shh_anywhere
 terraform plan --target <recurso>.<nombreRecurso>
 ```
+
 tambien podesmos utilizar los --target para eliminar recursos especificos
+
 # Atachar recursos aun no existentes
+
 Deseamos atachar un recurso que aun no sabemos el Id
 Atachando algo que se esta creando con terraform
-```
+
+```tf
 vpc_security_group_ids = [ aws_security_group.allow_shh_anywhere.id ]
 vpc_security_group_ids = [ <recurso>.<nombreRecurso>.<atributo>]
 ```
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group
+
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group>
 
 Atributos de un Security Group
 ```https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group#attributes-reference```
@@ -424,31 +519,39 @@ Atributos de un Security Group
 ```egress``` - The egress rules. See above for more.
 
 # Key Pair
+
 Si deseamos crear un Key-Pair conTerraform  podemos revisar la sintaxis
 ademas si queres atacaharla.
 ```https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/key_pair```
 
 Atachandola
-```
+
+```tf
 key_name = aws_key_pair.key-pair-terraform.name
 # para poder usar una key-pair creada por Terraform
 ```
+
 # User data
+
 Para poder ingresar el user data utilizaremos
-```
+
+```tf
 file("user-data.txt")
 ```
+
 Ejemplo
-```
+
+```tf
 user_data = file("user-data.txt")
 ```
 
 # Data Source - AMI
-Nos permiten acceder a data de AWS  existentes.
-https://www.terraform.io/docs/language/data-sources/index.html
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance
 
-```
+Nos permiten acceder a data de AWS  existentes.
+<https://www.terraform.io/docs/language/data-sources/index.html>
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance>
+
+```tf
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -471,18 +574,21 @@ El filter.values lo podes sacar simulando crear una ec2 desde la consola, luego 
 
 # Data source VPC
 
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc
-```
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc>
+
+```tf
 data "aws_vpc" "selected" {
   id = var.vpc_id
 }
 ```
+
 # AWS_lauch_configuration
+
 Nos permitira que un Scaling Group cree una serie de instancias de forma automatica y esto le indicara como seran configuradas esas maquinas.
 
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_configuration
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_configuration>
 
-```
+```tf
 resource "aws_launch_configuration" "as_conf" {
   name_prefix   = "web_config-${var.project_name}"
   image_id      = data.aws_ami.ubuntu.id
@@ -495,21 +601,22 @@ resource "aws_launch_configuration" "as_conf" {
   user_data = file("user-data.txt")
 }
 ```
+
 # Obtener el ID de una EC2
 
 ```instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)```
 
 # lifeCycle
+
 Nos permitira que cuando se modifique el recurso podamos asignar un comportamiento.
 Sirve para en caso de alguna entindad necesite de otra y no podamos modificar el otro recurso sin crear otro.
-https://www.terraform.io/docs/language/meta-arguments/lifecycle.html
-
+<https://www.terraform.io/docs/language/meta-arguments/lifecycle.html>
 
 # Balanceador de carga
 
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elb
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elb>
 
-```
+```tf
 # Create a new load balancer
 resource "aws_elb" "web" {
   name = "${var.project_name}-elb-web"
@@ -541,24 +648,28 @@ resource "aws_elb" "web" {
 # aws_autoscaling_group - Balanceador de carga
 
 Podemos atachar el balanceador de carga al autoscaling
-```
+
+```bash
 https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group
 ```
 
-```
+```tf
 load_balancers = [ aws_elb.web.name ]
 load_balancers = [ aws_elb.<nombreAsignado>.name ]
 ```
 
-##  health_check_type 
+## health_check_type
+
 Sirve para poder checkerar el ELB o EC2
 ```health_check_type    = "ELB"```
+
 ## health_check_grace_period
+
 Nos sirve para poder asiganar un tiempo desde que se inicia la maquina para comenzar a dar checkeos.
 
 ```health_check_grace_period = 10 # despues de encendida 10s comenzara el checkeo```
- 
-https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group#health_check_grace_period
+
+<https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group#health_check_grace_period>
 
 # VPC
 
@@ -567,7 +678,8 @@ https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/auto
 ## aws_subnet_ids
 
 ```https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet_ids```
-```
+
+```tf
 data "aws_vpc" "selected" {
   default = true
 }
@@ -582,35 +694,42 @@ data "aws_subnet_ids" "selected" {
 Terraform nos provee una consola para poder hacer uso de ella y experimentar o debugear con las variables
 ```terraform console```
 
-Obeter datos de los data sources sin necesidad de correr 
+Obeter datos de los data sources sin necesidad de correr
 
 ```var.project_name```
 ```data.aws_subnet_ids.selected.id```
 
 # Interpolation Syntax
-https://www.terraform.io/docs/configuration-0-11/interpolation.html
-  ## built-in-functions
-  Permiten transformar varibales
-   https://www.terraform.io/docs/configuration-0-11/interpolation.html#built-in-functions
 
-  - codifiar variables
+<https://www.terraform.io/docs/configuration-0-11/interpolation.html>
+
+## built-in-functions
+
+  Permiten transformar varibales
+   <https://www.terraform.io/docs/configuration-0-11/interpolation.html#built-in-functions>
+
+- codifiar variables
+  
   ```base64encode("hola")```  
- 
+
 ## string multilineas
-  ```
+
+  ```bash
   <<EOT
   hello
   world
   EOT
 ```
 
-# Templates en Terraform 
+# Templates en Terraform
+
 Terraform tiene sus plugin para poder iniciar lso template asique se debe ejecutar el ```terraform init```.
 
 Ejemplo
 
 template.tf
-```
+
+```bash
 data "template_file" "user_data" {
   template = file("template.txt")
   vars = {
@@ -621,14 +740,16 @@ data "template_file" "user_data" {
 ```
 
 output.tf
-```
+
+```tf
 output "template_rendered" {
   value = data.template_file.user_data.rendered
 }
 ```
 
 template.txt
-```
+
+```bash
 Estas son las variables para el proyecto: ${project_name}
 var 1: valor1
 var 2: valor2
@@ -636,16 +757,19 @@ var 3: valor3
 test varible value = ${test_var}
 Nombre del proyecto = ${project_name}
 ```
+
 # Terraform OUTPUT
 
 Terraform tiene un comamndo para poder ver nuestros output
-  ```terraform output``
-  ```terraform output <nombreOutput>```
-## Acceder a outputs de otro proyecto
-Para acceder a output de otros poyectos
-https://www.terraform.io/docs/language/state/remote-state-data.html
+  `terraform output`
+  `terraform output <nombreOutput>`
 
-```
+## Acceder a outputs de otro proyecto
+
+Para acceder a output de otros poyectos
+<https://www.terraform.io/docs/language/state/remote-state-data.html>
+
+```tf
 data "terraform_remote_state" "project1" {
   backend = "s3"
   config = {
@@ -655,8 +779,25 @@ data "terraform_remote_state" "project1" {
   }
 }
 ```
+
 podemos abrir la consola de terraform y escribir lo sigueinte para poder conocer la ip estatica que nuestro output del projecto 1 tiene
 
-```
+```bash
 data.terraform_remote_state.project1.outputs.web_public_EIP
+```
+
+# Crear un recurso especifico
+
+You can use -target=resource like this:
+
+```bash
+terraform plan -target=module.mymodule.aws_instance.myinstance
+terraform apply -target=module.mymodule.aws_instance.myinstance
+```
+
+or
+
+```bash
+terraform plan -target=aws_instance.myinstance
+terraform apply -target=aws_instance.myinstance
 ```
